@@ -1,10 +1,9 @@
-#! /bin/bash
+#!/bin/bash
 
 #########################
 
 # Jackal Network Monitoring Toolkit
-# @ArtificialAmateur
-# v .07
+# @ArtificialAmateur && @MrOctantis
 
 #########################
 
@@ -44,14 +43,46 @@ dX.    9Xb	.dXb    __                         __    dXb.     dXP     .Xb
                                `             '
 END
 
-while true; do
-echo $'\n[?] What module would you like to launch?' 
-echo $'  1) Category 1 \n  2) Category 2 \n  3) Category 3' 
-read modulec
-     case "$modulec" in
-       1 ) modules/foobar1.sh;;
-       2 ) modules/foobar2.sh;;
-       3 ) modules/foobar3.sh;;
-       * )  echo $'[-] Quitting script.\n' && break;;
-     esac 
+version='0.2.0'
+
+
+# Function to display help info
+function display_help() {
+cat <<'END'
+usage: jackal.sh [OPTION]
+Jackal Network Monitoring Toolkit.
+
+  -m [MODULE]	runs module of name specified
+  -l		list installed modules
+  -v 		output version information and exit
+  -h 		display this help and exit
+END
+}
+
+# Function to parse then run modules by name
+function run_module() {
+	if  [ -a ./modules/$1 ]; then
+		./modules/$1
+	else echo module not recognized. use jackal.sh -l to list installed modules. >&2
+	fi
+}
+
+while getopts ":vhm:lt" opt; do
+	case $opt in
+		v)
+			echo "jackal-toolkit version $version";;
+		h)
+			display_help;;
+		m)
+			run_module $OPTARG;;
+		l)
+			echo "Installed modules:"
+			ls -1 ./modules/;;
+		t)
+			run_module test;;
+		\?)
+			display_help;;
+	esac
+	did_something=true
 done
+if [ ! $did_something ]; then display_help; fi
