@@ -43,23 +43,41 @@ dX.    9Xb	.dXb    __                         __    dXb.     dXP     .Xb
                                `             '
 END
 
+version='0.0.7'
+
+
+# Function to display help info
 function display_help() {
 cat <<'END'
-usage: jackal-toolkit [OPTION]
+usage: jackal.sh [OPTION]
 Jackal Network Monitoring Toolkit.
 
+  -m [MODULE]	runs module of name specified
+  -l		list installed modules
   -v 		output version information and exit
   -h 		display this help and exit
 END
 }
 
-version='0.0.7'
-while getopts ":vh" opt; do
+# Function to parse then run modules by name
+function run_module() {
+	if  [ -a ./modules/$1 ]; then
+		./modules/$1
+	else echo module not recognized. use jackal.sh -l to list installed modules. >&2
+	fi
+}
+
+while getopts ":vhm:l" opt; do
 	case $opt in
 		v)
 			echo "jackal-toolkit version $version";;
 		h)
 			display_help;;
+		m)
+			run_module $OPTARG;;
+		l)
+			echo "Installed modules:"
+			ls -1 ./modules/;;
 		\?)
 			display_help;;
 	esac
