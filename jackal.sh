@@ -43,7 +43,7 @@ dX.    9Xb	.dXb    __                         __    dXb.     dXP     .Xb
                                `             '
 END
 
-version='0.0.7'
+version='0.2.0'
 
 
 # Function to display help info
@@ -67,7 +67,7 @@ function run_module() {
 	fi
 }
 
-while getopts ":vhm:l" opt; do
+while getopts ":vhm:lt" opt; do
 	case $opt in
 		v)
 			echo "jackal-toolkit version $version";;
@@ -78,6 +78,8 @@ while getopts ":vhm:l" opt; do
 		l)
 			echo "Installed modules:"
 			ls -1 ./modules/;;
+		t)
+			run_module test;;
 		\?)
 			display_help;;
 	esac
