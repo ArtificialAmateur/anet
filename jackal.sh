@@ -9,7 +9,7 @@
 
 
 #-|-------------- Launcher --------------|-
-
+function launcher(){
 cat <<'END'
 
     ___   ________   ________   ___  __     ________   ___          
@@ -42,8 +42,9 @@ dX.    9Xb	.dXb    __                         __    dXb.     dXP     .Xb
                               `b  `       '  d'
                                `             '
 END
+}
 
-version='0.3.0'
+version='0.4.0'
 
 
 # Function to display help info
@@ -62,6 +63,7 @@ END
 # Function to parse then run modules by name
 function run_module() {
 	if  [ -a ./modules/$1 ]; then
+		launcher;
 		./modules/$1
 	else echo module not recognized. use jackal.sh --list to list installed modules. >&2
 	fi
@@ -73,7 +75,7 @@ if [ $? != 0 ]; then echo "Failed parsing options." >&2; exit 1; fi
 while true; do
 	case "$1" in
 		-v | --version) echo "jackal-toolkit version $version"; did_something=true; shift;;
-		-h | --help)	display_help; did_something=truel shift;;
+		-h | --help)	display_help; did_something=true; shift;;
 		-m | --module)	if [ -n $2 ]; then run_module $2;
 				else echo "Module was not recognized. Try jackal.sh --list to view installed modules."
 				fi
