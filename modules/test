@@ -1,9 +1,2 @@
 #!/bin/bash
-echo Hacking the government:
-wlanshort=$(ifconfig -s | grep w | awk '{print $1}' | cat)
-wlanlong=$(ifconfig | grep $wlanshort | awk '{print $1}' | cat)
-sudo ifconfig $wlanlong down
-echo Interface $wlanlong down
-ping -c 5 google.com
-sudo ifconfig $wlanlong up
-echo Interface $wlanlong up
+echo Test has been run
