@@ -44,7 +44,7 @@ dX.    9Xb	.dXb    __                         __    dXb.     dXP     .Xb
 END
 }
 
-version='0.5.0'
+version='0.5.1'
 
 
 # Function to display help info
@@ -73,9 +73,11 @@ function run_module() {
 function list_modules() {
 	echo "Currently installed modules:"
 	modules=$(ls -1 ./modules/)
+	i=1
 	for m in $modules; do
-		echo -en "["$m"]\t\t--  "
-		sed -n '2{p;q}' ./modules/$m
+		echo -en "["$i"] "$m"\t\t--  "
+		sed -n '2{p;q}' ./modules/$m | sed -e 's/#//g'
+		i=$((i+1))
 	done
 }
 
