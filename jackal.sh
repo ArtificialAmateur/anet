@@ -44,7 +44,7 @@ dX.    9Xb	.dXb    __                         __    dXb.     dXP     .Xb
 END
 }
 
-version='0.4.2'
+version='0.4.3'
 
 
 # Function to display help info
