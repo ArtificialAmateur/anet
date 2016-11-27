@@ -43,7 +43,7 @@ dX.    9Xb	.dXb    __                         __    dXb.     dXP     .Xb
                                `             '
 END
 
-version='0.2.0'
+version='0.3.0'
 
 
 # Function to display help info
@@ -52,10 +52,10 @@ cat <<'END'
 usage: jackal.sh [OPTION]
 Jackal Network Monitoring Toolkit.
 
-  -m [MODULE]	runs module of name specified
-  -l		list installed modules
-  -v 		output version information and exit
-  -h 		display this help and exit
+  -m, --module [MODULE]	runs module of name specified
+  -l, --list		list installed modules
+  -v, --version		output version information and exit
+  -h, --help		display this help and exit
 END
 }
 
@@ -63,26 +63,26 @@ END
 function run_module() {
 	if  [ -a ./modules/$1 ]; then
 		./modules/$1
-	else echo module not recognized. use jackal.sh -l to list installed modules. >&2
+	else echo module not recognized. use jackal.sh --list to list installed modules. >&2
 	fi
 }
 
-while getopts ":vhm:lt" opt; do
-	case $opt in
-		v)
-			echo "jackal-toolkit version $version";;
-		h)
-			display_help;;
-		m)
-			run_module $OPTARG;;
-		l)
-			echo "Installed modules:"
-			ls -1 ./modules/;;
-		t)
-			run_module test;;
-		\?)
-			display_help;;
+OPTS='getopt -o vhm:lt --long version,help,module,list-modules,test -n 'parse-options' -- "$@"'
+if [ $? != 0 ]; then echo "Failed parsing options." >&2; exit 1; fi
+
+while true; do
+	case "$1" in
+		-v | --version) echo "jackal-toolkit version $version"; did_something=true; shift;;
+		-h | --help)	display_help; did_something=truel shift;;
+		-m | --module)	if [ -n $2 ]; then run_module $2;
+				else echo "Module was not recognized. Try jackal.sh --list to view installed modules."
+				fi
+				did_something=true; shift;;
+		-l | --list)	echo "Installed modules:"; ls -1 ./modules/; did_something=true; shift;;
+		-t | --test)	run_module test; did_something=true; shift;;
+		--)		shift; break;;
+		*)		break;;
 	esac
-	did_something=true
 done
+
 if [ ! $did_something ]; then display_help; fi

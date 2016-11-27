@@ -1,4 +1,4 @@
-jackal-toolkit v.01
+jackal-toolkit v0.3.0
 
 ToDo:
 * Add categories
