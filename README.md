@@ -1,4 +1,4 @@
-jackal-toolkit v0.4.3
+jackal-toolkit v0.5.0
 
 ToDo:
 * Username/Password phishing
@@ -6,4 +6,5 @@ ToDo:
 * Port scanning
 * Reverse SSH Shell
 * Keylogger payload
-* ?
+* Better basic security prequisites
+* Full iptables rules
