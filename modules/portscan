@@ -30,5 +30,5 @@ fi
 echo "[I] Beginning port scans. This may take a while"
 for host in $host_list; do
 	echo "Ports on "$host":"
-	nmap -A -T4 $host | grep -E '^[0-9]+/'
+	nmap -T4 $host | grep -E '^[0-9]+/'
 done
