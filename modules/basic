@@ -1,0 +1,33 @@
+#!/bin/bash
+# Basic security measures.
+
+#-|-------------- Dependencies --------------|-
+
+read -p "[?] Install/Update dependencies? (y/n) " depen_if
+if [ $depen_if == 'y' ]; then
+        echo "[I] Checking/Installing dependencies, please wait..."
+        apt-get -qq -y install macchanger &>/dev/null
+        echo "[I] Dependencies installed."
+else
+    	echo "[I] Skipping..."
+
+fi
+
+#-|-------------- MAC Address ---------------|-
+
+echo "Listing interfaces..."
+netstat -i | tail -n +3 | awk '{print $1}' | grep -v 'lo' 
+read -p "[?] Please enter the name of the network-facing interface: " ap_iface
+old_mac=$(ifconfig $ap_iface | grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}')
+echo "[I] Your current MAC address is: "$old_mac
+ifconfig $ap_iface down > /dev/null 2>&1
+for ((i=0; i<3; i++)); do
+	macchanger -r $ap_iface > /dev/null 2>&1
+done
+new_mac=$(ifconfig $ap_iface | grep -o -E '([[:xdigit:]]{1,2}:){5}[[:xdigit:]]{1,2}')
+echo "[I] Your new MAC address is: "$new_mac
+
+
+#-|------------- iptables Rules --------------|-
+
+#To be filled...

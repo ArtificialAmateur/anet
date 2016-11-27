@@ -11,13 +11,16 @@ if [ $depen_if == 'y' ]; then
 	echo "[I] Checking/Installing dependencies, please wait..."
 	apt-get -qq -y install dnsmasq mitmproxy hostapd screen wondershaper sslstrip &>/dev/null
 	echo "[I] Dependencies installed."
+else
+    	echo "[I] Skipping..."
+
 fi
 
 
 #-|----------- Wireless Interface -----------|-
 
 echo "Listing interfaces..."
-netstat -i | tail -n +3 | awk '{print $1}'
+netstat -i | tail -n +3 | awk '{print $1}' | grep -v 'lo' 
 read -p "[?] Please enter the desired name of your wireless interface (for the AP): " ap_iface
 read -p "[?] Please enter the name of your internet connected interface: " net_iface
 # echo this variable with escape characters
@@ -214,4 +217,4 @@ if ["$sslstrip_if" == "y"]; then
 	echo "[I] Traffic has been saved to the file 'mitmap-sslstrip.log'."
 fi
 echo -e "[!] WARNING: If you want to use the AP interface normally, a reboot is required.\n"
-echo "[I] mitmAP module stopped."
+echo "[!] mitmAP module stopped."
