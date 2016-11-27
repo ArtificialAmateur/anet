@@ -115,7 +115,7 @@ then
 	for i in {0..$dns_num};
 	do
 		dns_num_temp=$((i+1))
-		read -p "  [?] "$((dns_num_temp+1))". Domain to spoof (exclude: 'www.'): " dns_domain
+		read -p "  [?] "$dns_num_temp". Domain to spoof (exclude: 'www.'): " dns_domain
 		read -p "  [?] Fake IP for domain "$dns_domain": " dns_ip
 		dns_line="address=/"$dns_domain"/"$dns_ip
 		echo -e $dns_line >> /etc/dnsmasq.conf
