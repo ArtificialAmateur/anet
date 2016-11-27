@@ -114,7 +114,6 @@ then
 	# I'm not too sure this while loop is made correctly ##fixed it for you
 	for ((i=1; i<=$dns_num; i++));
 	do
-		dns_num_temp=$((i+1))
 		read -p "  [?] "$dns_num_temp". Domain to spoof (exclude: 'www.'): " dns_domain
 		read -p "  [?] Fake IP for domain "$dns_domain": " dns_ip
 		dns_line="address=/"$dns_domain"/"$dns_ip
