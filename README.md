@@ -1,6 +1,9 @@
-jackal-toolkit v0.4.1
+jackal-toolkit v0.4.3
 
 ToDo:
-* Add categories
-* phishing for usernames/passwords
-* deauthing
+* Username/Password phishing
+* Deauthing
+* Port scanning
+* Reverse SSH Shell
+* Keylogger payload
+* ?
