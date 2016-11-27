@@ -44,7 +44,7 @@ dX.    9Xb	.dXb    __                         __    dXb.     dXP     .Xb
 END
 }
 
-version='0.4.1'
+version='0.4.2'
 
 
 # Function to display help info
@@ -69,6 +69,16 @@ function run_module() {
 	fi
 }
 
+#Function to list modules installed to ./modules/
+function list_modules() {
+	echo "Currently installed modules:"
+	modules=$(ls -1 ./modules/)
+	for m in $modules; do
+		echo -en "["$m"]\t\t--  "
+		sed -n '2{p;q}' ./modules/$m
+	done
+}
+
 OPTS='getopt -o vhm:lt --long version,help,module,list-modules,test -n 'parse-options' -- "$@"'
 if [ $? != 0 ]; then echo "Failed parsing options." >&2; exit 1; fi
 
@@ -80,7 +90,7 @@ while true; do
 				else echo "Module was not recognized. Try jackal.sh --list to list installed modules."
 				fi
 				did_something=true; shift;;
-		-l | --list)	echo "Installed modules:"; ls -1 ./modules/; did_something=true; shift;;
+		-l | --list)	list_modules; did_something=true; shift;;
 		-t | --test)	run_module test; did_something=true; shift;;
 		--)		shift; break;;
 		*)		break;;

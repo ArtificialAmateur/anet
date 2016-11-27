@@ -1,0 +1,3 @@
+#!/bin/bash
+#Module for testing early functionality
+echo Test has been run
