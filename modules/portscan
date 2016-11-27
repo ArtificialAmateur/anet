@@ -1,0 +1,34 @@
+#!/bin/bash
+#Port Scanning Module
+
+echo $'\n[>] Port Scanning Module'
+
+
+#-|-------------- Dependencies --------------|-
+
+read -p "[?] Install/Update dependencies? (y/n) " depen_if
+if [ $depen_if == 'y' ]; then
+	echo "[I] Checking/Installing dependencies, please wait..."
+	apt-get -qq -y install nmap &>/dev/null
+	echo "[I] Dependencies installed."
+else
+	echo "[I] Skipping..."
+
+fi
+
+#-|---------------- Hostlist ----------------|-
+
+read -p "[?] Specify more than one host? (y/n) " mult_host
+if [ $mult_host == 'y' ]; then
+	while read -p "[?] Enter host name, or XX to stop: " host_name; do
+	if [ $host_name == 'XX' ]; then break; fi
+	host_list="$host_list"$'\n'"$host_name"
+	done
+else
+	read -p "[?] Enter host name: " host_list
+fi
+echo "[I] Beginning port scans. This may take a while"
+for host in $host_list; do
+	echo "Ports on "$host":"
+	nmap -A -T4 $host | grep -E '^[0-9]+/'
+done
