@@ -112,7 +112,7 @@ then
 	echo "  [I] Backing up /etc/dnsmasq.conf"
 	cp /etc/dnsmasq.conf /etc/dnsmasq.conf.backup
 	# I'm not too sure this while loop is made correctly ##fixed it for you
-	for i in {0..$dns_num};
+	for ((i=1; i<=$dns_num; i++));
 	do
 		dns_num_temp=$((i+1))
 		read -p "  [?] "$dns_num_temp". Domain to spoof (exclude: 'www.'): " dns_domain
