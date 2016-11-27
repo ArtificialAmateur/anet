@@ -44,7 +44,7 @@ dX.    9Xb	.dXb    __                         __    dXb.     dXP     .Xb
 END
 }
 
-version='0.4.0'
+version='0.4.1'
 
 
 # Function to display help info
@@ -77,7 +77,7 @@ while true; do
 		-v | --version) echo "jackal-toolkit version $version"; did_something=true; shift;;
 		-h | --help)	display_help; did_something=true; shift;;
 		-m | --module)	if [ -n $2 ]; then run_module $2;
-				else echo "Module was not recognized. Try jackal.sh --list to view installed modules."
+				else echo "Module was not recognized. Try jackal.sh --list to list installed modules."
 				fi
 				did_something=true; shift;;
 		-l | --list)	echo "Installed modules:"; ls -1 ./modules/; did_something=true; shift;;
