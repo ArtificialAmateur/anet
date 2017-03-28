@@ -3,7 +3,7 @@
 #########################
 
 # Jackal Network Monitoring Toolkit
-# @ArtificialAmateur && @MrOctantis
+# @ArtificialAmateur && @alefir
 
 #########################
 
