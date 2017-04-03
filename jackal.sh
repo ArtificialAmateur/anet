@@ -62,10 +62,21 @@ END
 
 # Function to parse then run modules by name
 function run_module() {
-	if  [ -a ./modules/$1 ]; then
-		launcher;
-		./modules/$1
-	else echo module not recognized. use jackal.sh --list to list installed modules. >&2
+	# Check if the input is a number or a string
+	if  [[ $1 =~ ^[0-9]*$ ]]; then
+		if  [ $( list_modules | grep -c $1 ) = "1" ]; then
+			torun=$(ls -1 ./modules/ | sed -n -e "$1{p;q}");
+			launcher;
+			./modules/$torun
+		else
+			echo Module not recognized. Use jackal.sh --list to list installed modules. >&2
+		fi
+	else
+		if  [ -a ./modules/$1 ]; then 	
+			launcher;
+			./modules/$1
+		else echo module not recognized. use jackal.sh --list to list installed modules. >&2
+		fi	
 	fi
 }
 
