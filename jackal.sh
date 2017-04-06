@@ -102,7 +102,7 @@ while true; do
 		-v | --version) echo "jackal-toolkit version $version"; did_something=true; shift;;
 		-h | --help)	display_help; did_something=true; shift;;
 		-m | --module)	if [ -n $2 ]; then run_module $2;
-				else echo "Usage is jackal.sh -m <module name/number>"
+				else echo "Usage is jackal.sh -m [module name/number]"
 				fi
 				did_something=true; shift;;
 		-l | --list)	list_modules; did_something=true; shift;;
