@@ -64,6 +64,7 @@ END
 function run_module() {
 	# Check if the input is a number or a string
 	if  [[ $1 =~ ^[0-9]*$ ]]; then
+		# Check if the number passed represents a valid module
 		if  [ $( list_modules | grep -c $1 ) = "1" ]; then
 			torun=$(ls -1 ./modules/ | sed -n -e "$1{p;q}");
 			launcher;
@@ -72,6 +73,7 @@ function run_module() {
 			echo Module not recognized. Use jackal.sh --list to list installed modules. >&2
 		fi
 	else
+		# Check if the module name passed is valid
 		if  [ -a ./modules/$1 ]; then 	
 			launcher;
 			./modules/$1
@@ -100,7 +102,7 @@ while true; do
 		-v | --version) echo "jackal-toolkit version $version"; did_something=true; shift;;
 		-h | --help)	display_help; did_something=true; shift;;
 		-m | --module)	if [ -n $2 ]; then run_module $2;
-				else echo "Module was not recognized. Try jackal.sh --list to list installed modules."
+				else echo "Usage is jackal.sh -m <module name/number>"
 				fi
 				did_something=true; shift;;
 		-l | --list)	list_modules; did_something=true; shift;;
