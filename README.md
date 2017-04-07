@@ -1,10 +1,10 @@
-jackal-toolkit v0.5.0
+#Automatic Network Enumeration Toolkit v0.5.0
 
-ToDo:
-* Username/Password phishing
-* Deauthing
+##Purpose:
+To be quickly deployed in an internal network and gather all possible information with automatic modules.
+
+##ToDo:
 * Port scanning
 * Reverse SSH Shell
-* Keylogger payload
 * Better basic security prequisites
 * Full iptables rules
