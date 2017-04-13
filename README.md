@@ -1,4 +1,4 @@
-# Automatic Network Enumeration Toolkit v0.5.0
+# Automatic Network Enumeration Toolkit
 
 ## Purpose:
 To be quickly deployed in an internal network and gather all possible information with automatic modules.
@@ -6,5 +6,5 @@ To be quickly deployed in an internal network and gather all possible informatio
 ## ToDo:
 * Port scanning
 * Reverse SSH Shell
-* Better basic security prequisites
-* Full iptables rules
+* portSpider
+* Convert to C++
