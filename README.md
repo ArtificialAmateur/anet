@@ -1,4 +1,4 @@
-# Automatic Network Enumeration Toolkit v0.5.0
+# Automatic Network Enumeration Toolkit
 
 ## Purpose:
 To be quickly deployed in an internal network and gather all possible information with automatic modules.
